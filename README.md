@@ -1,152 +1,212 @@
 # Chit Fund Analyzer
 
-A comprehensive, modular Python library for analyzing chit fund investments with IRR calculations and scenario analysis.
-
-## Overview
-
-This project provides tools to analyze chit fund investments by calculating Internal Rate of Return (IRR), comparing different bid amounts, and identifying optimal bidding strategies. The codebase follows clean code principles and SOLID design patterns for maintainability and extensibility.
+A Python package for analyzing chit fund investments with robust validation, type safety, and comprehensive analysis capabilities.
 
 ## Features
 
-- ✅ **IRR Calculation**: Accurate annual IRR computation for chit fund investments
-- ✅ **Scenario Analysis**: Compare multiple bid amounts side-by-side
-- ✅ **Optimal Bid Finder**: Automatically identify the best bidding strategy
-- ✅ **Validation**: Built-in parameter validation and error handling
-- ✅ **Extensible Design**: Easy to extend with new features and metrics
-- ✅ **Clean Code**: Follows PEP 8, type hints, comprehensive documentation
-- ✅ **Well Tested**: Unit tests with pytest for reliability
+- 🔒 **Type Safety**: Uses Pydantic for robust data validation and type checking
+- 🏗️ **Clean Architecture**: Well-structured code with separated concerns
+- 🔧 **Extensible Design**: Easy to add new analysis methods and validation rules
+- ⚠️ **Error Handling**: Comprehensive error handling with custom exceptions
+- 🐍 **Modern Python**: Uses modern Python features and best practices
+- 📊 **Comprehensive Analysis**: IRR calculations, scenario analysis, and optimization
+
+## Installation
+
+This package requires Python 3.13+ and the following dependencies:
+
+```bash
+# Install dependencies using uv (recommended)
+uv add pydantic numpy-financial pandas openpyxl
+
+# Or using pip
+pip install pydantic numpy-financial pandas openpyxl
+```
 
 ## Quick Start
 
-### Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-### Basic Usage
-
 ```python
-from chit_fund_calculator import (
-    ChitFundConfig, ChitFundCalculator, 
-    ScenarioAnalyzer, ChitFrequency
-)
+from chit_fund_analyzer import ChitFundConfig, ChitFundAnalyzer
+from decimal import Decimal
 
-# Configure chit fund
+# Create configuration with automatic validation
 config = ChitFundConfig(
     total_installments=14,
-    current_installment_number=4,
-    full_chit_value=700000,
-    chit_frequency_per_year=ChitFrequency.SEMI_ANNUAL.value,
-    previous_installments=[42000, 40000, 40000, 43000],
-    winner_installment_amount=50000
+    current_installment_number=5,
+    full_chit_value=Decimal('700000'),
+    chit_frequency_per_year=2,  # Bi-annual payments
+    previous_installments=[
+        Decimal('42000'), Decimal('40000'), 
+        Decimal('40000'), Decimal('43000')
+    ],
+    bid_amount=Decimal('100000')
 )
 
-# Analyze scenarios
-analyzer = ScenarioAnalyzer()
-results = analyzer.analyze_scenarios(
-    config=config,
-    bid_range=(50000, 200000),
-    bid_step=10000
-)
+# Perform analysis
+analyzer = ChitFundAnalyzer(config)
+result = analyzer.analyze()
 
-# Find optimal bid
-optimal = analyzer.find_optimal_bid(config=config)
-print(f"Optimal bid: ₹{optimal['bid_amount']:,.0f}")
-print(f"Annual IRR: {optimal['annual_irr']:.2f}%")
+# Display results
+print(f"Prize Amount: ₹{result.prize_amount:,.2f}")
+print(f"Annual IRR: {result.annual_irr:.2%}")
 ```
 
-## Project Structure
+## Core Components
+
+### 1. ChitFundConfig
+Pydantic model for configuration with built-in validation:
+- Validates installment counts and sequences
+- Ensures bid amounts are reasonable
+- Provides type safety for all inputs
+- Supports custom winner installment amounts
+
+### 2. ChitFundAnalyzer
+Main analysis engine:
+- Calculates prize amounts
+- Generates cashflow arrays
+- Computes IRR (Internal Rate of Return)
+- Provides formatted results
+
+### 3. ScenarioAnalyzer
+Advanced analysis capabilities:
+- Multiple bid scenario analysis
+- Optimization for target IRR
+- Payment frequency comparisons
+- Export to pandas DataFrames
+
+## Example: Scenario Analysis
+
+```python
+from chit_fund_analyzer import ScenarioAnalyzer
+from decimal import Decimal
+
+# Create scenario analyzer
+scenario_analyzer = ScenarioAnalyzer(config)
+
+# Analyze multiple bid amounts
+bid_amounts = [Decimal(str(x)) for x in [80000, 100000, 120000]]
+scenarios = scenario_analyzer.analyze_bid_scenarios(bid_amounts)
+
+# Create DataFrame for easy viewing
+df = scenario_analyzer.create_scenario_dataframe(scenarios)
+print(df)
+```
+
+## Example: Find Optimal Bid
+
+```python
+# Find bid amount that maximizes IRR
+optimal = scenario_analyzer.find_optimal_bid(
+    bid_range=(80000, 150000),
+    step_size=Decimal('2000')
+)
+
+print(f"Optimal bid: ₹{optimal['optimal_bid_amount']:,.0f}")
+print(f"Expected IRR: {optimal['optimal_annual_irr_formatted']}")
+```
+
+## Validation Features
+
+The package includes comprehensive input validation:
+
+```python
+# This will raise a validation error
+try:
+    invalid_config = ChitFundConfig(
+        total_installments=10,
+        current_installment_number=15,  # > total_installments!
+        full_chit_value=Decimal('500000'),
+        chit_frequency_per_year=12,
+        previous_installments=[],
+        bid_amount=Decimal('50000')
+    )
+except ValueError as e:
+    print(f"Validation error: {e}")
+```
+
+## Module Structure
 
 ```
 chit_fund_analyzer/
-├── chit_fund_calculator.py      # Core module with all classes
-├── chit_intrest_cal.ipynb       # Interactive Jupyter notebook
-├── test_chit_fund_calculator.py # Comprehensive unit tests
-├── requirements.txt              # Python dependencies
-├── USAGE_GUIDE.md               # Detailed usage documentation
-└── README.md                     # This file
+├── __init__.py          # Package initialization and exports
+├── models.py           # Pydantic models and validation
+├── analyzer.py         # Core analysis functionality
+├── scenario.py         # Scenario analysis and optimization
+├── utils.py           # Utility functions and formatters
+└── exceptions.py      # Custom exception classes
 ```
 
-## Documentation
+## Advanced Usage
 
-- **[USAGE_GUIDE.md](USAGE_GUIDE.md)**: Comprehensive guide with examples, API reference, and extension patterns
-- **Jupyter Notebook**: `chit_intrest_cal.ipynb` contains interactive examples
+### Custom Winner Installment
+```python
+config = ChitFundConfig(
+    # ... other parameters ...
+    winner_installment_amount=Decimal('45000')  # Custom amount
+)
+```
 
-## Key Classes
+### Frequency Comparison
+```python
+# Compare same bid across different payment frequencies
+comparison = scenario_analyzer.compare_frequencies(
+    bid_amount=Decimal('100000'),
+    frequencies=[1, 2, 4, 12]  # Annual, bi-annual, quarterly, monthly
+)
+```
 
-### ChitFundConfig
-Configuration dataclass with automatic validation for all parameters.
+### Export to Excel
+```python
+from chit_fund_analyzer.utils import export_to_excel
 
-### ChitFundCalculator
-Core calculation engine for prize amounts, cashflows, and IRR.
+# Export multiple analysis results
+export_data = {
+    'Base Analysis': base_df,
+    'Scenarios': scenario_df,
+    'Frequency Analysis': frequency_df
+}
+export_to_excel(export_data, 'chit_analysis.xlsx')
+```
 
-### ScenarioAnalyzer
-Multi-scenario analysis tool for comparing different bid strategies.
+## Testing
 
-### ReportGenerator
-Utilities for formatting and exporting analysis results.
-
-## Running Tests
+Run the included test script to verify installation:
 
 ```bash
-# Run all tests
-pytest test_chit_fund_calculator.py
-
-# Run with coverage
-pytest --cov=chit_fund_calculator test_chit_fund_calculator.py
-
-# Run specific test class
-pytest test_chit_fund_calculator.py::TestChitFundCalculator
+python test_module.py
 ```
 
-## Example Output
+## Demo Notebook
 
-```
-================================================================================
-                      BID AMOUNT SCENARIO ANALYSIS                      
-================================================================================
- Bid Amount  Prize Received  Total Repayment  Net Interest Cost  Annual IRR (%)  Effective Interest (%)
-     50,000         650,000          665,000             15,000           16.45                    2.31
-    100,000         600,000          665,000             65,000           12.34                   10.83
-    150,000         550,000          665,000            115,000            8.92                   20.91
-    200,000         500,000          665,000            165,000            5.87                   33.00
-
-================================================================================
-                         OPTIMAL BID STRATEGY                          
-================================================================================
-Bid Amount: ₹50,000
-Prize Received: ₹650,000
-Annual IRR: 16.45%
-Net Interest Cost: ₹15,000
-```
-
-## Future Enhancements
-
-- 📊 Visualization with matplotlib/plotly
-- 📈 Sensitivity analysis for parameter variations
-- 📊 Risk metrics (standard deviation, VaR)
-- 📅 Time-based analysis with actual dates
-- 💰 Tax calculations and implications
-- 🔄 Multi-winner scenarios
-- 📱 Web interface for analysis
+For comprehensive examples and interactive analysis, see:
+- `chit_fund_analyzer_demo.ipynb` - Complete walkthrough with examples
 
 ## Contributing
 
-Contributions are welcome! Please ensure:
-1. Code follows PEP 8 style guidelines
-2. All functions have type hints and docstrings
-3. Unit tests are included for new features
-4. Documentation is updated
+The package is designed for extensibility:
+
+1. **Add new validators**: Extend validation logic in `models.py`
+2. **New analysis methods**: Add methods to `analyzer.py`
+3. **Custom scenarios**: Extend `scenario.py` with new analysis types
+4. **Utility functions**: Add helpers to `utils.py`
+5. **Custom exceptions**: Define specific errors in `exceptions.py`
+
+## Error Handling
+
+The package provides specific exceptions for different error types:
+- `ChitFundAnalysisError`: General analysis errors
+- `ValidationError`: Input validation failures
+- `CalculationError`: Mathematical calculation issues
+- `ConfigurationError`: Configuration problems
+
+## Requirements
+
+- Python 3.13+
+- pydantic 2.x
+- numpy-financial
+- pandas
+- openpyxl (for Excel export)
 
 ## License
 
-This project is open source and available for educational and personal use.
-
-## Author
-
-Jagadeesan Muthuvel
-
-## Acknowledgments
-
-Built with clean code principles and SOLID design patterns for maintainability and extensibility.
+This project is open source and available under the MIT License.
