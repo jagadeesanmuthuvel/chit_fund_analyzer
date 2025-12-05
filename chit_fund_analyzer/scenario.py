@@ -143,61 +143,6 @@ class ScenarioAnalyzer:
         
         return df
 
-    def find_optimal_bid(
-        self, 
-        bid_range: tuple,
-        target_irr: Optional[float] = None,
-        step_size: Decimal = Decimal('1000'),
-        winner_installment_amount: Optional[Decimal] = None
-    ) -> Dict[str, Any]:
-        """
-        Find optimal bid amount based on criteria.
-        
-        Args:
-            bid_range: Tuple of (min_bid, max_bid)
-            target_irr: Target annual IRR to achieve
-            step_size: Step size for bid amount increments
-            winner_installment_amount: Optional winner installment override
-            
-        Returns:
-            Dictionary with optimal bid analysis results
-        """
-        min_bid, max_bid = bid_range
-        current_bid = Decimal(str(min_bid))
-        bid_amounts = []
-        
-        # Generate bid amounts
-        while current_bid <= max_bid:
-            bid_amounts.append(current_bid)
-            current_bid += step_size
-        
-        # Analyze scenarios
-        scenarios = self.analyze_bid_scenarios(bid_amounts, winner_installment_amount)
-        
-        # Find optimal based on criteria
-        if target_irr is not None:
-            # Find bid closest to target IRR
-            best_scenario = min(
-                scenarios, 
-                key=lambda s: abs(s.annual_irr - target_irr)
-            )
-            optimization_criterion = f"Closest to target IRR of {target_irr:.2%}"
-        else:
-            # Find highest IRR
-            best_scenario = max(scenarios, key=lambda s: s.annual_irr)
-            optimization_criterion = "Highest Annual IRR"
-        
-        return {
-            'optimization_criterion': optimization_criterion,
-            'optimal_bid_amount': best_scenario.bid_amount,
-            'optimal_prize_amount': best_scenario.prize_amount,
-            'optimal_annual_irr': best_scenario.annual_irr,
-            'optimal_annual_irr_formatted': f"{best_scenario.annual_irr:.2%}",
-            'total_scenarios_analyzed': len(scenarios),
-            'bid_range_analyzed': f"₹{min_bid:,.0f} - ₹{max_bid:,.0f}",
-            'all_scenarios': scenarios
-        }
-
     def compare_frequencies(
         self, 
         bid_amount: Decimal,

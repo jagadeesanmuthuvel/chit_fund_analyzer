@@ -9,7 +9,7 @@ A Python package for analyzing chit fund investments with robust validation, typ
 - 🔧 **Extensible Design**: Easy to add new analysis methods and validation rules
 - ⚠️ **Error Handling**: Comprehensive error handling with custom exceptions
 - 🐍 **Modern Python**: Uses modern Python features and best practices
-- 📊 **Comprehensive Analysis**: IRR calculations, scenario analysis, and optimization
+- 📊 **Comprehensive Analysis**: IRR calculations, scenario analysis, and comparisons
 
 ## Installation
 
@@ -92,17 +92,21 @@ df = scenario_analyzer.create_scenario_dataframe(scenarios)
 print(df)
 ```
 
-## Example: Find Optimal Bid
+## Example: Find Best Scenario
 
 ```python
-# Find bid amount that maximizes IRR
-optimal = scenario_analyzer.find_optimal_bid(
-    bid_range=(80000, 150000),
-    step_size=Decimal('2000')
-)
+# Generate multiple bid amounts and analyze the range
+from chit_fund_analyzer.utils import generate_bid_range
 
-print(f"Optimal bid: ₹{optimal['optimal_bid_amount']:,.0f}")
-print(f"Expected IRR: {optimal['optimal_annual_irr_formatted']}")
+bid_amounts = generate_bid_range(min_bid=80000, max_bid=150000, num_scenarios=10)
+scenarios = scenario_analyzer.analyze_bid_scenarios(bid_amounts)
+
+# Find best and worst scenarios manually
+best_scenario = max(scenarios, key=lambda s: s.annual_irr)
+worst_scenario = min(scenarios, key=lambda s: s.annual_irr)
+
+print(f"Best case - Bid: ₹{best_scenario.bid_amount:,.0f}, IRR: {best_scenario.annual_irr:.2%}")
+print(f"Worst case - Bid: ₹{worst_scenario.bid_amount:,.0f}, IRR: {worst_scenario.annual_irr:.2%}")
 ```
 
 ## Validation Features
@@ -176,10 +180,35 @@ Run the included test script to verify installation:
 python test_module.py
 ```
 
-## Demo Notebook
+## Web Application
 
-For comprehensive examples and interactive analysis, see:
+### Streamlit Web Interface 🌐
+
+A comprehensive web application with interactive analysis and visualizations:
+
+```bash
+# Run the web app
+python run_app.py
+
+# Or directly with streamlit
+streamlit run streamlit_app.py
+```
+
+**Features:**
+- 🔧 **Interactive Configuration**: Web form for all parameters
+- 📊 **Real-time Analysis**: Instant IRR calculations and results
+- 📈 **Rich Visualizations**: Interactive charts and graphs
+- 🔍 **Scenario Analysis**: Compare multiple bid amounts
+- 💡 **Smart Insights**: Automated recommendations
+- 📄 **Export**: Download results in multiple formats
+
+Access at: http://localhost:8501
+
+### Demo Notebook
+
+For comprehensive examples and programmatic usage, see:
 - `chit_fund_analyzer_demo.ipynb` - Complete walkthrough with examples
+- `STREAMLIT_README.md` - Detailed web app documentation
 
 ## Contributing
 
