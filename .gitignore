@@ -39,7 +39,7 @@ ENV/
 .env
 .env.local
 *.env
-
+*.json
 # Logs
 *.log
 logs/
