@@ -9,8 +9,9 @@ A comprehensive setup guide for deploying the Chit Fund Analyzer application in 
 3. [Production Setup](#production-setup)
 4. [Environment Configuration](#environment-configuration)
 5. [Deployment Options](#deployment-options)
-6. [Troubleshooting](#troubleshooting)
-7. [Maintenance](#maintenance)
+6. [Google Sheets Integration](#google-sheets-integration)
+7. [Troubleshooting](#troubleshooting)
+8. [Maintenance](#maintenance)
 
 ## Prerequisites
 
@@ -31,6 +32,7 @@ A comprehensive setup guide for deploying the Chit Fund Analyzer application in 
 
 ### 🚀 Quick Start (Recommended)
 
+### Option 1: Standard App (Local Data)
 ```bash
 # 1. Clone the repository
 git clone https://github.com/jagadeesanmuthuvel/chit_fund_analyzer.git
@@ -53,8 +55,20 @@ uv sync
 # macOS/Linux
 source .venv/bin/activate
 
-# 5. Run the application
+# 5. Run the standard application
 python run_app.py
+```
+
+### Option 2: Google Sheets Integration (Recommended for Data Persistence)
+```bash
+# Follow steps 1-4 above, then:
+
+# 5. Set up Google Sheets API (see GOOGLE_SHEETS_SETUP.md)
+# 6. Test Google Sheets integration
+python test_sheets_integration.py
+
+# 7. Run the Google Sheets integrated app
+python run_sheets_app.py
 ```
 
 ### 📦 Alternative Setup (Using pip)
@@ -83,11 +97,14 @@ streamlit run streamlit_app.py
 ### 🧪 Verify Development Setup
 
 ```bash
-# Test module functionality
+# Test standard module functionality
 python test_module.py
 
-# Test Streamlit app components
+# Test standard Streamlit app components
 python test_streamlit.py
+
+# Test Google Sheets integration (if using)
+python test_sheets_integration.py
 
 # Run demo notebook (requires Jupyter)
 jupyter lab chit_fund_analyzer_demo.ipynb
@@ -439,6 +456,32 @@ kubectl get services
 
 ---
 
+## Google Sheets Integration
+
+### 📊 Features
+The app now includes Google Sheets integration for:
+- **Persistent Data Storage**: Store chit fund configurations and installment history
+- **Multi-Device Access**: Access your data from anywhere
+- **Data Backup**: Automatic backup in Google Drive
+- **Collaboration**: Share data with family members or financial advisors
+- **Real-time Sync**: Changes are immediately saved to the cloud
+
+### 🔧 Setup Requirements
+1. **Google Cloud Project** with Sheets & Drive APIs enabled
+2. **Service Account** with JSON credentials
+3. **Google Sheets** shared with the service account
+
+### 📚 Documentation
+- **Setup Guide**: See [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md) for detailed instructions
+- **Testing**: Use `python test_sheets_integration.py` to verify setup
+- **App Launch**: Use `python run_sheets_app.py` to start with Google Sheets
+
+### 🔀 App Versions
+- **Standard App** (`streamlit_app.py`): Local data storage, no external dependencies
+- **Google Sheets App** (`app_with_sheets.py`): Cloud data storage, requires Google API setup
+
+---
+
 ## Troubleshooting
 
 ### 🔍 Common Issues and Solutions
@@ -644,10 +687,13 @@ tar -czf "$BACKUP_DIR/backup-$DATE.tar.gz" \
 
 ### Development Commands
 ```bash
-python run_app.py                    # Start development server
+python run_app.py                    # Start standard development server
+python run_sheets_app.py             # Start Google Sheets integrated app
 python test_module.py                # Test core functionality
 python test_streamlit.py             # Test Streamlit components
-streamlit run streamlit_app.py       # Direct Streamlit run
+python test_sheets_integration.py    # Test Google Sheets integration
+streamlit run streamlit_app.py       # Direct Streamlit run (standard)
+streamlit run app_with_sheets.py     # Direct Streamlit run (with sheets)
 ```
 
 ### Production Commands

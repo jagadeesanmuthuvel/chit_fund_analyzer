@@ -5,6 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "google-auth>=2.43.0",
+    "google-auth-httplib2>=0.2.1",
+    "google-auth-oauthlib>=1.2.2",
+    "gspread>=6.2.1",
     "jupyterlab>=4.5.0",
     "matplotlib>=3.10.7",
     "numpy>=2.3.5",
@@ -15,4 +19,5 @@ dependencies = [
     "pydantic>=2.12.5",
     "scipy>=1.16.3",
     "streamlit>=1.52.0",
+    "streamlit-authenticator>=0.4.2",
 ]
