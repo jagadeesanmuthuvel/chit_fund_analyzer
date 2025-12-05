@@ -40,6 +40,10 @@ ENV/
 .env.local
 *.env
 *.json
+
+# OAuth credentials (sensitive)
+oauth_credentials.json
+credentials.json
 # Logs
 *.log
 logs/
