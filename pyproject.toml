@@ -26,5 +26,9 @@ dependencies = [
 [project.optional-dependencies]
 e2e = [
     "playwright>=1.48.0",
+    "pytest>=8.0.0",
     "pytest-playwright>=0.6.2",
 ]
+
+[project.scripts]
+chit-app = "streamlit_app.main:main"

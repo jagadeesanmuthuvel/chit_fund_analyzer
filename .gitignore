@@ -44,6 +44,24 @@ ENV/
 # OAuth credentials (sensitive)
 oauth_credentials.json
 credentials.json
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+test_artifacts/
+test_scripts/
+
+# Playwright
+.playwright-mcp/
+*screenshot*.png
+*error*.png
+
+# Data files
+data/*.xlsx
+!data/.gitkeep
+
 # Logs
 *.log
 logs/
