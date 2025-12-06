@@ -229,3 +229,109 @@ class ChitFundFormatter:
         
         lines.append("=" * 45)
         return "\n".join(lines)
+
+
+def calculate_varying_installments(
+    full_chit_value: Decimal,
+    total_installments: int,
+    min_installment: Decimal,
+    max_installment: Decimal
+) -> List[Decimal]:
+    """
+    Generate varying installment amounts using linear interpolation.
+    
+    Simulates realistic non-winner installment payments that vary
+    between min and max amounts based on bid variations.
+    
+    Args:
+        full_chit_value: Full value of the chit fund
+        total_installments: Total number of installments
+        min_installment: Minimum installment amount
+        max_installment: Maximum installment amount
+        
+    Returns:
+        List of varying installment amounts (length = total_installments - 1)
+    """
+    varying_amounts = []
+    
+    # Generate N-1 varying amounts (last installment is when you win)
+    for i in range(total_installments - 1):
+        # Linear interpolation from min to max
+        progress = i / max(1, (total_installments - 2))
+        amount = min_installment + (max_installment - min_installment) * Decimal(str(progress))
+        varying_amounts.append(amount)
+    
+    return varying_amounts
+
+
+def calculate_sip_future_value(
+    installments: List[Decimal],
+    annual_rate: float,
+    frequency_per_year: int
+) -> Decimal:
+    """
+    Calculate SIP future value with varying installment amounts.
+    
+    Each installment compounds independently for the remaining periods.
+    Formula: FV = Σ(installment_i × (1 + rate)^(N-i))
+    
+    Args:
+        installments: List of SIP installment amounts
+        annual_rate: Annual return rate (as decimal, e.g., 0.12 for 12%)
+        frequency_per_year: Number of payments per year
+        
+    Returns:
+        Total maturity value as Decimal
+    """
+    if annual_rate <= 0:
+        # If rate is 0 or negative, just sum up amounts
+        return sum(installments)
+    
+    # Calculate period rate
+    period_rate = ((1 + annual_rate) ** (1 / frequency_per_year)) - 1
+    
+    total_value = Decimal('0')
+    total_periods = len(installments)
+    
+    # Each installment compounds for remaining periods
+    for i, amount in enumerate(installments):
+        periods_remaining = total_periods - i
+        growth_factor = Decimal(str((1 + period_rate) ** periods_remaining))
+        future_value = amount * growth_factor
+        total_value += future_value
+    
+    return total_value
+
+
+def calculate_lump_sum_future_value(
+    principal: Decimal,
+    annual_rate: float,
+    periods: int,
+    frequency_per_year: int
+) -> Decimal:
+    """
+    Calculate lump sum future value with compound interest.
+    
+    Formula: FV = Principal × (1 + rate)^periods
+    where rate is the period rate based on frequency
+    
+    Args:
+        principal: Initial lump sum amount
+        annual_rate: Annual return rate (as decimal)
+        periods: Number of compounding periods
+        frequency_per_year: Payment frequency per year
+        
+    Returns:
+        Future value as Decimal
+    """
+    if annual_rate <= 0 or periods <= 0:
+        return principal
+    
+    # Calculate period rate
+    period_rate = ((1 + annual_rate) ** (1 / frequency_per_year)) - 1
+    
+    # Compound for given periods
+    growth_factor = Decimal(str((1 + period_rate) ** periods))
+    future_value = principal * growth_factor
+    
+    return future_value
