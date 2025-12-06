@@ -7,6 +7,7 @@ Chit selection, creation, and editing interface.
 from typing import Optional
 from decimal import Decimal
 from datetime import date, timedelta
+import time
 import streamlit as st
 from streamlit_app.db import ChitFundDB
 from streamlit_app.utils import (
@@ -92,39 +93,29 @@ def render_select_edit_tab(db: ChitFundDB) -> None:
             st.markdown("---")
             st.markdown("### Edit Chit Details")
             
-            with st.form("edit_chit_form"):
+            # Use columns for better layout
+            col1, col2 = st.columns(2)
+            
+            with col1:
                 new_name = st.text_input(
                     "Chit Name",
                     value=selected_chit['name'],
-                    key="edit_name"
+                    key=f"edit_name_{selected_chit_id}"
                 )
-                
+            
+            with col2:
                 new_description = st.text_area(
                     "Description",
                     value=selected_chit.get('description', ''),
-                    key="edit_description"
+                    height=100,
+                    key=f"edit_description_{selected_chit_id}"
                 )
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    submit_edit = st.form_submit_button(
-                        "💾 Save Changes",
-                        type="primary",
-                        use_container_width=True
-                    )
-                
-                with col2:
-                    if st.form_submit_button(
-                        "➡️ Proceed to Installments",
-                        use_container_width=True
-                    ):
-                        # Load chit into session and advance stage
-                        st.session_state['selected_chit'] = selected_chit
-                        st.session_state['current_stage'] = 2
-                        st.rerun()
-                
-                if submit_edit:
+            
+            # Action buttons
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                def save_chit_changes():
                     try:
                         db.update_chit_metadata(
                             selected_chit_id,
@@ -133,10 +124,42 @@ def render_select_edit_tab(db: ChitFundDB) -> None:
                                 'description': new_description
                             }
                         )
-                        show_success("Chit details updated successfully!")
-                        st.rerun()
+                        st.session_state['_chit_updated'] = True
                     except Exception as e:
-                        show_error(f"Failed to update chit: {str(e)}")
+                        st.session_state['_update_error'] = str(e)
+                
+                st.button(
+                    "💾 Save Changes",
+                    type="primary",
+                    use_container_width=True,
+                    key=f"save_chit_{selected_chit_id}",
+                    on_click=save_chit_changes
+                )
+            
+            with col2:
+                def go_to_installments():
+                    st.session_state['selected_chit'] = selected_chit
+                    st.session_state['current_stage'] = 2
+                
+                st.button(
+                    "➡️ Proceed to Installments",
+                    use_container_width=True,
+                    key=f"proceed_inst_{selected_chit_id}",
+                    on_click=go_to_installments
+                )
+            
+            # Show status messages
+            if st.session_state.get('_chit_updated'):
+                # Reload the chit data
+                st.session_state['_chit_updated'] = False
+                updated_chit = db.get_chit_by_id(selected_chit_id)
+                st.session_state['selected_chit'] = updated_chit
+                show_success("✅ Chit details updated successfully!")
+                st.rerun()
+            
+            if st.session_state.get('_update_error'):
+                error_msg = st.session_state.pop('_update_error')
+                show_error(f"Failed to update chit: {error_msg}")
 
 
 def render_create_tab(db: ChitFundDB) -> None:
@@ -235,17 +258,35 @@ def render_create_tab(db: ChitFundDB) -> None:
             show_success(f"✨ Chit Fund '{chit_name}' created successfully!")
             st.balloons()
             
-            # Load the created chit
+            # Load the created chit and verify installments
             created_chit = db.get_chit_by_id(chit_id)
+            installments = db.get_installments(chit_id)
+            
+            if not created_chit or not installments:
+                show_error("Failed to initialize chit or installments. Please try again.")
+                return
+            
+            # Store in session state BEFORE showing button
             st.session_state['selected_chit'] = created_chit
             
-            # Show next steps - button now outside form
+            # Show next steps with delayed button
             st.markdown("---")
             st.markdown("### Next Steps")
+            st.info(f"✅ Chit created with {len(installments)} installments")
             
-            if st.button("➡️ Go to Installment Tracking", type="primary", key="goto_installments"):
+            # Use callback to handle navigation
+            def go_to_installments():
                 st.session_state['current_stage'] = 2
-                st.rerun()
+            
+            col1, col2 = st.columns([2, 1])
+            with col2:
+                st.button(
+                    "➡️ Go to Installment Tracking", 
+                    type="primary", 
+                    use_container_width=True, 
+                    key="goto_installments_btn",
+                    on_click=go_to_installments
+                )
             
         except Exception as e:
             show_error(f"Failed to create chit: {str(e)}")
