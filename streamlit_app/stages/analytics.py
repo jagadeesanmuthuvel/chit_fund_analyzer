@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 from chit_fund_analyzer.models import ChitFundConfig, BidScenario
 from chit_fund_analyzer.analyzer import ChitFundAnalyzer
 from chit_fund_analyzer.scenario import ScenarioAnalyzer
+from chit_fund_analyzer.comparative import ComparativeAnalyzer
 from chit_fund_analyzer.exceptions import ChitFundAnalysisError
 
 from streamlit_app.db import ChitFundDB
@@ -60,7 +61,7 @@ def render(db: ChitFundDB) -> None:
         current_installment = chit['total_installments']
     
     # Create tabs for different analysis types
-    tab1, tab2 = st.tabs(["🎯 Scenario Analysis", "⚖️ Comparative Analysis"])
+    tab1, tab2 = st.tabs(["🎯 Scenario Analysis", "⚖️ 3-Way Comparative Analysis"])
     
     with tab1:
         render_scenario_analysis(db, chit, current_installment, previous_amounts)
@@ -164,79 +165,109 @@ def render_comparative_analysis(
     current_installment: int,
     previous_amounts: List[Decimal]
 ) -> None:
-    """Render comparative investment analysis tab."""
+    """Render 3-way comparative investment analysis tab."""
     
-    st.subheader("⚖️ Break-Even & Investment Comparison")
+    st.subheader("⚖️ 3-Way Investment Comparison")
     
     st.markdown("""
-    Compare the returns from winning a chit fund at a specific bid amount against 
-    alternative investment options like Fixed Deposits, Mutual Funds, or other returns.
+    Compare three investment scenarios using IRR and absolute final values:
+    1. **Win Early + Lump Sum** - Win at specific installment, invest prize as lump sum
+    2. **Win Late** - Don't win until last installment with varying amounts
+    3. **SIP Investment** - Regular SIP matching chit frequency and amounts
     """)
     
     # Configuration section
     st.markdown("---")
-    st.subheader("🎯 Configuration")
+    st.subheader("🎯 Scenario Configuration")
     
-    col1, col2 = st.columns(2)
+    # Scenario 1: Early Win Configuration
+    with st.expander("📍 **Scenario 1: Win Early + Lump Sum Investment**", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            win_installment = st.number_input(
+                "Win at Installment #",
+                min_value=current_installment,
+                max_value=chit['total_installments'] - 1,
+                value=current_installment,
+                step=1,
+                help="At which installment you win the chit"
+            )
+        
+        with col2:
+            win_bid_amount = st.number_input(
+                "Bid Amount (₹)",
+                min_value=1000.0,
+                max_value=float(chit['full_chit_value']) * 0.9,
+                value=50000.0,
+                step=1000.0,
+                help="Your bid amount when you win"
+            )
+        
+        with col3:
+            lumpsum_rate = st.number_input(
+                "Lump Sum Investment Rate (% p.a.)",
+                min_value=0.0,
+                max_value=30.0,
+                value=10.0,
+                step=0.5,
+                help="Expected annual return on lump sum investment"
+            )
     
-    with col1:
-        bid_amount = st.number_input(
-            "Chit Bid Amount (₹)",
-            min_value=1000.0,
-            max_value=float(chit['full_chit_value']) * 0.9,
-            value=50000.0,
-            step=1000.0,
-            help="The bid amount at which you win the chit"
-        )
+    # Scenario 2: Late Win Configuration
+    with st.expander("📍 **Scenario 2: Win Late (Last Installment)**", expanded=True):
+        col1, col2 = st.columns(2)
         
-        st.metric("Current Installment", current_installment)
-        st.metric("Total Installments", chit['total_installments'])
+        with col1:
+            late_min_installment = st.number_input(
+                "Minimum Installment Amount (₹)",
+                min_value=1000.0,
+                max_value=float(chit['full_chit_value']),
+                value=float(chit['full_chit_value']) / chit['total_installments'] * 0.8,
+                step=100.0,
+                help="Minimum expected installment payment"
+            )
+        
+        with col2:
+            late_max_installment = st.number_input(
+                "Maximum Installment Amount (₹)",
+                min_value=late_min_installment,
+                max_value=float(chit['full_chit_value']),
+                value=float(chit['full_chit_value']) / chit['total_installments'] * 1.2,
+                step=100.0,
+                help="Maximum expected installment payment"
+            )
     
-    with col2:
-        st.markdown("##### Alternative Investment Returns")
-        
-        fd_rate = st.number_input(
-            "Fixed Deposit Rate (%)",
-            min_value=0.0,
-            max_value=20.0,
-            value=7.0,
-            step=0.25,
-            help="Annual interest rate for FD"
-        )
-        
-        mf_rate = st.number_input(
-            "Mutual Fund Expected Return (%)",
+    # Scenario 3: SIP Configuration
+    with st.expander("📍 **Scenario 3: SIP Investment**", expanded=True):
+        sip_rate = st.number_input(
+            "SIP Expected Return (% p.a.)",
             min_value=0.0,
             max_value=30.0,
             value=12.0,
             step=0.5,
-            help="Expected annual return from mutual funds"
+            help="Expected annual return from SIP investment"
         )
-        
-        custom_rate = st.number_input(
-            "Custom Investment Return (%)",
-            min_value=0.0,
-            max_value=50.0,
-            value=10.0,
-            step=0.5,
-            help="Any other investment option annual return"
-        )
+        st.caption("ℹ️ SIP will use same varying installment amounts as Scenario 2")
     
     # Analyze button
-    if st.button("🔍 Compare Investments", type="primary", use_container_width=True):
-        compare_investments(
+    st.markdown("---")
+    if st.button("🚀 Run 3-Way Comparison", type="primary", use_container_width=True):
+        run_three_way_comparison(
             chit=chit,
             current_installment=current_installment,
             previous_amounts=previous_amounts,
-            bid_amount=bid_amount,
-            fd_rate=fd_rate / 100,  # Convert to decimal
-            mf_rate=mf_rate / 100,
-            custom_rate=custom_rate / 100
+            win_installment=win_installment,
+            win_bid_amount=win_bid_amount,
+            lumpsum_rate=lumpsum_rate / 100,
+            late_min_installment=late_min_installment,
+            late_max_installment=late_max_installment,
+            sip_rate=sip_rate / 100
         )
     
     # Display comparison results
-    if 'comparison_results' in st.session_state and st.session_state['comparison_results']:
-        display_comparison_results(st.session_state['comparison_results'])
+    if 'three_way_comparison' in st.session_state and st.session_state['three_way_comparison']:
+        display_three_way_comparison(st.session_state['three_way_comparison'])
 
 
 def run_scenario_analysis(
@@ -282,6 +313,49 @@ def run_scenario_analysis(
         show_error(f"Analysis error: {str(e)}")
     except Exception as e:
         show_error(f"Unexpected error: {str(e)}")
+
+
+def run_three_way_comparison(
+    chit: Dict[str, Any],
+    current_installment: int,
+    previous_amounts: List[Decimal],
+    win_installment: int,
+    win_bid_amount: float,
+    lumpsum_rate: float,
+    late_min_installment: float,
+    late_max_installment: float,
+    sip_rate: float
+) -> None:
+    """Run the 3-way comparison analysis using ComparativeAnalyzer."""
+    
+    try:
+        # Create comparative analyzer
+        analyzer = ComparativeAnalyzer(chit_config={
+            'total_installments': chit['total_installments'],
+            'full_chit_value': chit['full_chit_value'],
+            'chit_frequency_per_year': chit['chit_frequency_per_year'],
+            'current_installment': current_installment,
+            'name': chit['name']
+        })
+        
+        # Run comparison analysis
+        result = analyzer.compare_three_scenarios(
+            previous_amounts=previous_amounts,
+            win_installment=win_installment,
+            win_bid_amount=win_bid_amount,
+            lumpsum_rate=lumpsum_rate,
+            late_min_installment=late_min_installment,
+            late_max_installment=late_max_installment,
+            sip_rate=sip_rate
+        )
+        
+        # Store results in session state
+        st.session_state['three_way_comparison'] = result
+        
+        show_success("✅ 3-way comparison completed successfully!")
+        
+    except Exception as e:
+        show_error(f"Comparison error: {str(e)}")
 
 
 def display_scenario_results(results: Dict[str, Any]) -> None:
@@ -435,281 +509,257 @@ def display_scenario_results(results: Dict[str, Any]) -> None:
         )
 
 
-def compare_investments(
-    chit: Dict[str, Any],
-    current_installment: int,
-    previous_amounts: List[Decimal],
-    bid_amount: float,
-    fd_rate: float,
-    mf_rate: float,
-    custom_rate: float
-) -> None:
-    """Compare chit fund returns with alternative investments."""
-    
-    try:
-        # Analyze chit fund
-        config = ChitFundConfig(
-            total_installments=chit['total_installments'],
-            current_installment_number=current_installment,
-            full_chit_value=Decimal(str(chit['full_chit_value'])),
-            chit_frequency_per_year=chit['chit_frequency_per_year'],
-            previous_installments=previous_amounts,
-            bid_amount=Decimal(str(bid_amount))
-        )
-        
-        analyzer = ChitFundAnalyzer(config)
-        chit_result = analyzer.analyze()
-        
-        # Calculate prize amount and remaining installments
-        prize_amount = float(chit_result.prize_amount)
-        remaining_installments = chit['total_installments'] - current_installment
-        installment_amount = (float(chit['full_chit_value']) - bid_amount) / remaining_installments if remaining_installments > 0 else 0
-        
-        # Calculate months per installment
-        months_per_installment = 12 / chit['chit_frequency_per_year']
-        total_months = remaining_installments * months_per_installment
-        
-        # Calculate alternative investment returns
-        monthly_rate_fd = (1 + fd_rate) ** (1/12) - 1
-        monthly_rate_mf = (1 + mf_rate) ** (1/12) - 1
-        monthly_rate_custom = (1 + custom_rate) ** (1/12) - 1
-        
-        fd_final = prize_amount * ((1 + monthly_rate_fd) ** total_months)
-        mf_final = prize_amount * ((1 + monthly_rate_mf) ** total_months)
-        custom_final = prize_amount * ((1 + monthly_rate_custom) ** total_months)
-        
-        # Calculate break-even bid amount
-        break_even_bid = calculate_break_even_bid(
-            chit, current_installment, previous_amounts, fd_rate
-        )
-        
-        # Store results
-        st.session_state['comparison_results'] = {
-            'chit': {
-                'bid_amount': bid_amount,
-                'prize_amount': prize_amount,
-                'annual_irr': chit_result.annual_irr,
-                'installment_amount': installment_amount,
-                'remaining_installments': remaining_installments
-            },
-            'fd': {
-                'rate': fd_rate,
-                'final_amount': fd_final,
-                'gain': fd_final - prize_amount,
-            },
-            'mf': {
-                'rate': mf_rate,
-                'final_amount': mf_final,
-                'gain': mf_final - prize_amount,
-            },
-            'custom': {
-                'rate': custom_rate,
-                'final_amount': custom_final,
-                'gain': custom_final - prize_amount,
-            },
-            'break_even_bid': break_even_bid,
-        }
-        
-        show_success("✅ Comparison analysis completed!")
-        
-    except Exception as e:
-        show_error(f"Comparison error: {str(e)}")
-
-
-def calculate_break_even_bid(
-    chit: Dict[str, Any],
-    current_installment: int,
-    previous_amounts: List[Decimal],
-    target_rate: float
-) -> float:
-    """Calculate the bid amount that would give IRR equal to target rate."""
-    
-    try:
-        # Binary search for break-even bid
-        low = 1000.0
-        high = float(chit['full_chit_value']) * 0.9
-        tolerance = 100.0
-        
-        while high - low > tolerance:
-            mid = (low + high) / 2
-            
-            config = ChitFundConfig(
-                total_installments=chit['total_installments'],
-                current_installment_number=current_installment,
-                full_chit_value=Decimal(str(chit['full_chit_value'])),
-                chit_frequency_per_year=chit['chit_frequency_per_year'],
-                previous_installments=previous_amounts,
-                bid_amount=Decimal(str(mid))
-            )
-            
-            analyzer = ChitFundAnalyzer(config)
-            result = analyzer.analyze()
-            
-            if result.annual_irr > target_rate:
-                low = mid
-            else:
-                high = mid
-        
-        return (low + high) / 2
-    except Exception:
-        return 0.0
-
-
-def display_comparison_results(results: Dict[str, Any]) -> None:
-    """Display investment comparison results."""
+def display_three_way_comparison(result) -> None:
+    """Display the 3-way comparison results with visualizations."""
     
     st.markdown("---")
-    st.subheader("📊 Comparison Results")
+    st.header("📊 3-Way Comparison Results")
     
-    chit = results['chit']
-    fd = results['fd']
-    mf = results['mf']
-    custom = results['custom']
+    scenario1 = result.scenario1
+    scenario2 = result.scenario2
+    scenario3 = result.scenario3
     
-    # Key metrics comparison
-    st.markdown("### 💰 Returns Comparison")
+    # ===== SUMMARY CARDS =====
+    st.subheader("💰 Final Values & IRR Comparison")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
+        st.markdown("#### 🎯 Scenario 1: Win Early")
         st.metric(
-            "🎯 Chit Fund",
-            format_percentage(chit['annual_irr']),
-            delta=f"Prize: {format_currency(chit['prize_amount'])}"
+            "Final Value",
+            format_currency(scenario1.final_absolute_value),
+            delta=format_percentage(scenario1.annual_irr)
         )
+        st.caption(f"Win at #{scenario1.details['win_installment']}, Bid: {format_currency(scenario1.details['bid_amount'])}")
     
     with col2:
+        st.markdown("#### 📅 Scenario 2: Win Late")
         st.metric(
-            "🏦 Fixed Deposit",
-            format_percentage(fd['rate']),
-            delta=f"Gain: {format_currency(fd['gain'])}"
+            "Final Value",
+            format_currency(scenario2.final_absolute_value),
+            delta=format_percentage(scenario2.annual_irr)
         )
+        st.caption(f"Win at last, Avg: {format_currency(scenario2.details['avg_installment'])}")
     
     with col3:
+        st.markdown("#### 📈 Scenario 3: SIP")
         st.metric(
-            "📈 Mutual Fund",
-            format_percentage(mf['rate']),
-            delta=f"Gain: {format_currency(mf['gain'])}"
+            "Final Value",
+            format_currency(scenario3.final_absolute_value),
+            delta=format_percentage(scenario3.annual_irr)
         )
+        st.caption(f"Rate: {format_percentage(scenario3.details['sip_rate'])}")
     
-    with col4:
-        st.metric(
-            "💼 Custom Investment",
-            format_percentage(custom['rate']),
-            delta=f"Gain: {format_currency(custom['gain'])}"
+    # ===== WINNER ANNOUNCEMENT =====
+    st.markdown("---")
+    st.subheader("🏆 Best Strategy")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.success(f"✅ **{result.best_scenario_name}** is the best strategy!")
+        st.markdown(f"**Advantage:** {format_currency(result.advantage_amount)} over next best option")
+    
+    with col2:
+        emoji_map = {
+            'Early Win + Lump Sum': "🎯",
+            'Late Win (Last Installment)': "📅",
+            'SIP Investment': "📈"
+        }
+        emoji = emoji_map.get(result.best_scenario_name, "🏆")
+        
+        st.markdown(f"""
+        <div style='text-align: center; padding: 20px; background-color: #10b981; border-radius: 10px;'>
+            <h1 style='font-size: 60px; margin: 0;'>{emoji}</h1>
+            <p style='color: white; margin: 10px 0 0 0;'><strong>Winner!</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # ===== COMPARISON CHARTS =====
+    st.markdown("---")
+    st.subheader("📊 Visual Comparison")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Final values comparison
+        fig_values = go.Figure(data=[
+            go.Bar(
+                x=['Win Early', 'Win Late', 'SIP'],
+                y=[
+                    float(scenario1.final_absolute_value),
+                    float(scenario2.final_absolute_value),
+                    float(scenario3.final_absolute_value)
+                ],
+                marker_color=['#3b82f6', '#10b981', '#f59e0b'],
+                text=[
+                    format_currency(scenario1.final_absolute_value),
+                    format_currency(scenario2.final_absolute_value),
+                    format_currency(scenario3.final_absolute_value)
+                ],
+                textposition='outside'
+            )
+        ])
+        
+        fig_values.update_layout(
+            title="Final Absolute Values",
+            yaxis_title="Final Value (₹)",
+            height=350,
+            template='plotly_white',
+            showlegend=False
         )
+        
+        st.plotly_chart(fig_values, use_container_width=True)
     
-    # Winner analysis
-    st.markdown("### 🏆 Best Investment Option")
+    with col2:
+        # IRR comparison
+        fig_irr = go.Figure(data=[
+            go.Bar(
+                x=['Win Early', 'Win Late', 'SIP'],
+                y=[
+                    scenario1.annual_irr * 100,
+                    scenario2.annual_irr * 100,
+                    scenario3.annual_irr * 100
+                ],
+                marker_color=['#3b82f6', '#10b981', '#f59e0b'],
+                text=[
+                    f"{scenario1.annual_irr * 100:.2f}%",
+                    f"{scenario2.annual_irr * 100:.2f}%",
+                    f"{scenario3.annual_irr * 100:.2f}%"
+                ],
+                textposition='outside'
+            )
+        ])
+        
+        fig_irr.update_layout(
+            title="Annual IRR (%)",
+            yaxis_title="IRR (%)",
+            height=350,
+            template='plotly_white',
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig_irr, use_container_width=True)
     
-    options = {
-        'Chit Fund': chit['annual_irr'],
-        'Fixed Deposit': fd['rate'],
-        'Mutual Fund': mf['rate'],
-        'Custom Investment': custom['rate']
-    }
+    # ===== DETAILED BREAKDOWN =====
+    st.markdown("---")
+    st.subheader("📋 Detailed Breakdown")
     
-    best_option = max(options, key=options.get)
-    best_return = options[best_option]
+    tab1, tab2, tab3 = st.tabs([
+        "🎯 Scenario 1: Win Early",
+        "📅 Scenario 2: Win Late",
+        "📈 Scenario 3: SIP"
+    ])
     
-    if best_option == 'Chit Fund':
-        st.success(f"✅ **Chit Fund is the best option** with {format_percentage(best_return)} annual return!")
-        advantage = best_return - max(fd['rate'], mf['rate'], custom['rate'])
-        st.info(f"💡 Advantage over next best option: **{format_percentage(advantage)}** higher returns")
-    else:
-        st.warning(f"⚠️ **{best_option} is better** with {format_percentage(best_return)} annual return")
-        disadvantage = best_return - chit['annual_irr']
-        st.info(f"💡 Chit Fund returns are **{format_percentage(disadvantage)}** lower")
-    
-    # Break-even analysis
-    st.markdown("### ⚖️ Break-Even Analysis")
-    
-    if results['break_even_bid'] > 0:
+    with tab1:
+        st.markdown("##### Early Win + Lump Sum Investment Details")
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric(
-                "Current Bid Amount",
-                format_currency(chit['bid_amount'])
-            )
+            st.markdown("**Chit Details:**")
+            st.write(f"• Win Installment: **#{scenario1.details['win_installment']}**")
+            st.write(f"• Bid Amount: **{format_currency(scenario1.details['bid_amount'])}**")
+            st.write(f"• Prize Received: **{format_currency(scenario1.details['prize_amount'])}**")
+            st.write(f"• Total Invested: **{format_currency(scenario1.total_invested)}**")
         
         with col2:
-            st.metric(
-                f"Break-Even Bid (vs {format_percentage(fd['rate'])} FD)",
-                format_currency(results['break_even_bid']),
-                delta=format_currency(results['break_even_bid'] - chit['bid_amount'])
-            )
+            st.markdown("**Lump Sum Investment:**")
+            st.write(f"• Investment: **{format_currency(scenario1.details['lumpsum_investment'])}**")
+            st.write(f"• Rate: **{format_percentage(scenario1.details['lumpsum_rate'])}**")
+            st.write(f"• Periods: **{scenario1.details['remaining_periods']}**")
+            st.write(f"• Final Value: **{format_currency(scenario1.details['lumpsum_final_value'])}**")
         
-        if chit['bid_amount'] < results['break_even_bid']:
-            margin = results['break_even_bid'] - chit['bid_amount']
-            st.success(f"✅ Your bid has a safety margin of {format_currency(margin)}. You can bid up to {format_currency(results['break_even_bid'])} and still beat FD returns!")
-        else:
-            excess = chit['bid_amount'] - results['break_even_bid']
-            st.warning(f"⚠️ Your bid is {format_currency(excess)} higher than break-even. Consider bidding lower to improve returns.")
+        st.markdown("---")
+        st.metric("Annual IRR", format_percentage(scenario1.annual_irr))
+        st.metric("Net Gain", format_currency(scenario1.net_gain))
     
-    # Detailed comparison chart
-    st.markdown("### 📊 Visual Comparison")
+    with tab2:
+        st.markdown("##### Late Win (Last Installment) Details")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Chit Details:**")
+            st.write(f"• Win at: **Last Installment**")
+            st.write(f"• Bid Amount: **{format_currency(scenario2.details['bid_amount'])}**")
+            st.write(f"• Prize Received: **{format_currency(scenario2.details['prize_amount'])}**")
+            st.write(f"• Total Invested: **{format_currency(scenario2.total_invested)}**")
+        
+        with col2:
+            st.markdown("**Installment Range:**")
+            st.write(f"• Min: **{format_currency(scenario2.details['min_installment'])}**")
+            st.write(f"• Max: **{format_currency(scenario2.details['max_installment'])}**")
+            st.write(f"• Average: **{format_currency(scenario2.details['avg_installment'])}**")
+            st.write(f"• Installments Paid: **{scenario2.details['total_installments_paid']}**")
+        
+        st.markdown("---")
+        st.metric("Annual IRR", format_percentage(scenario2.annual_irr))
+        st.metric("Net Gain", format_currency(scenario2.net_gain))
     
-    import plotly.graph_objects as go
+    with tab3:
+        st.markdown("##### SIP Investment Details")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**SIP Configuration:**")
+            st.write(f"• Rate: **{format_percentage(scenario3.details['sip_rate'])}**")
+            st.write(f"• Total SIPs: **{scenario3.details['total_sips']}**")
+            st.write(f"• Total Invested: **{format_currency(scenario3.total_invested)}**")
+        
+        with col2:
+            st.markdown("**Returns:**")
+            st.write(f"• Maturity Value: **{format_currency(scenario3.details['sip_maturity'])}**")
+            st.write(f"• Net Gain: **{format_currency(scenario3.net_gain)}**")
+        
+        st.markdown("---")
+        st.metric("Annual IRR (CAGR)", format_percentage(scenario3.annual_irr))
+        st.metric("Net Gain", format_currency(scenario3.net_gain))
     
-    comparison_data = {
-        'Investment': ['Chit Fund', 'Fixed Deposit', 'Mutual Fund', 'Custom'],
-        'Annual Return (%)': [
-            chit['annual_irr'] * 100,
-            fd['rate'] * 100,
-            mf['rate'] * 100,
-            custom['rate'] * 100
+    # ===== SUMMARY TABLE =====
+    st.markdown("---")
+    st.subheader("📊 Summary Table")
+    
+    summary_data = {
+        'Strategy': [scenario1.scenario_name, scenario2.scenario_name, scenario3.scenario_name],
+        'Total Invested': [
+            format_currency(scenario1.total_invested),
+            format_currency(scenario2.total_invested),
+            format_currency(scenario3.total_invested)
         ],
-        'Color': ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
-    }
-    
-    fig = go.Figure(data=[
-        go.Bar(
-            x=comparison_data['Investment'],
-            y=comparison_data['Annual Return (%)'],
-            marker_color=comparison_data['Color'],
-            text=[f"{val:.2f}%" for val in comparison_data['Annual Return (%)']],
-            textposition='outside',
-            hovertemplate='<b>%{x}</b><br>Return: %{y:.2f}%<extra></extra>'
-        )
-    ])
-    
-    fig.update_layout(
-        title="Annual Returns Comparison",
-        xaxis_title="Investment Type",
-        yaxis_title="Annual Return (%)",
-        height=400,
-        template='plotly_white',
-        showlegend=False
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Detailed breakdown table
-    st.markdown("### 📋 Detailed Breakdown")
-    
-    breakdown_data = {
-        'Investment Type': ['Chit Fund', 'Fixed Deposit', 'Mutual Fund', 'Custom Investment'],
-        'Annual Return': [
-            format_percentage(chit['annual_irr']),
-            format_percentage(fd['rate']),
-            format_percentage(mf['rate']),
-            format_percentage(custom['rate'])
-        ],
-        'Final Amount': [
-            format_currency(chit['prize_amount']),
-            format_currency(fd['final_amount']),
-            format_currency(mf['final_amount']),
-            format_currency(custom['final_amount'])
+        'Final Value': [
+            format_currency(scenario1.final_absolute_value),
+            format_currency(scenario2.final_absolute_value),
+            format_currency(scenario3.final_absolute_value)
         ],
         'Net Gain': [
-            format_currency(0),  # Already received
-            format_currency(fd['gain']),
-            format_currency(mf['gain']),
-            format_currency(custom['gain'])
+            format_currency(scenario1.net_gain),
+            format_currency(scenario2.net_gain),
+            format_currency(scenario3.net_gain)
+        ],
+        'Annual IRR': [
+            format_percentage(scenario1.annual_irr),
+            format_percentage(scenario2.annual_irr),
+            format_percentage(scenario3.annual_irr)
         ]
     }
     
-    breakdown_df = pd.DataFrame(breakdown_data)
-    st.dataframe(breakdown_df, use_container_width=True, hide_index=True)
-
+    summary_df = pd.DataFrame(summary_data)
+    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+    
+    # ===== EXPORT BUTTON =====
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
+    with col2:
+        excel_data = create_downloadable_df(summary_df, "three_way_comparison.xlsx")
+        
+        st.download_button(
+            label="📥 Download Comparison Report",
+            data=excel_data,
+            file_name=f"chit_3way_comparison_{date.today()}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )

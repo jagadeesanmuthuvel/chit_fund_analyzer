@@ -1,15 +1,13 @@
-"""
+"""                                                                                                                                                                  
 Data models and validation schemas for chit fund analysis.
 
 This module contains Pydantic models for validating and structuring
 chit fund data with proper type hints and constraints.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator, model_validator
-
-
 class ChitFundConfig(BaseModel):
     """
     Configuration model for chit fund parameters with validation.
@@ -153,6 +151,68 @@ class ChitFundAnalysisResult(BaseModel):
     cashflows: List[Decimal]
     annual_irr: float
     period_irr: float
+
+    class Config:
+        """Pydantic config for the model."""
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }
+
+
+class ComparisonScenario(BaseModel):
+    """
+    Model for individual comparison scenario results.
+    
+    Attributes:
+        scenario_name: Name of the scenario
+        cashflows: Complete cashflow array for the scenario
+        annual_irr: Annual Internal Rate of Return
+        final_absolute_value: Absolute final value at end of tenure
+        total_invested: Total amount invested/paid
+        net_gain: Net gain (final_value - total_invested)
+        details: Additional scenario-specific details
+    """
+    
+    scenario_name: str = Field(..., description="Scenario name")
+    cashflows: List[Decimal] = Field(..., description="Cashflow array")
+    annual_irr: float = Field(..., description="Annual Internal Rate of Return")
+    final_absolute_value: Decimal = Field(..., description="Final absolute value at tenure end")
+    total_invested: Decimal = Field(..., description="Total amount invested")
+    net_gain: Decimal = Field(..., description="Net gain (final - invested)")
+    details: Dict[str, Any] = Field(default_factory=dict, description="Scenario-specific details")
+
+    class Config:
+        """Pydantic config for the model."""
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }
+
+
+class ThreeWayComparisonResult(BaseModel):
+    """
+    Complete result for 3-way comparative analysis.
+    
+    Attributes:
+        scenario1: Early win + lump sum scenario
+        scenario2: Late win scenario
+        scenario3: SIP investment scenario
+        chit_name: Name of the chit fund
+        total_installments: Total number of installments
+        chit_value: Full chit fund value
+        frequency_per_year: Payment frequency per year
+        best_scenario_name: Name of the best performing scenario
+        advantage_amount: Advantage amount over second best scenario
+    """
+    
+    scenario1: ComparisonScenario
+    scenario2: ComparisonScenario
+    scenario3: ComparisonScenario
+    chit_name: str
+    total_installments: int
+    chit_value: Decimal
+    frequency_per_year: int
+    best_scenario_name: str
+    advantage_amount: Decimal
 
     class Config:
         """Pydantic config for the model."""
