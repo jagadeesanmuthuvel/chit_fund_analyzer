@@ -210,6 +210,31 @@ For comprehensive examples and programmatic usage, see:
 - `chit_fund_analyzer_demo.ipynb` - Complete walkthrough with examples
 - `STREAMLIT_README.md` - Detailed web app documentation
 
+### New Streamlit UI (advanced workflow)
+
+The `streamlit_app/` package hosts a multi-stage Streamlit experience that persists data to Google Sheets:
+
+```bash
+uv run streamlit run streamlit_app/main.py
+```
+
+It requires a valid `oauth_credentials.json` (installed app client). Tokens are cached in encrypted cookies to avoid repeated prompts.
+
+#### End-to-End Playwright Tests
+
+Pre-baked refresh tokens allow fully automated tests without interacting with the OAuth popup:
+
+```bash
+# install optional dependencies
+uv pip install '.[e2e]'
+
+# set env variables (see docs/streamlit_app_plan.md §11)
+export CHIT_APP_AUTH_MODE=refresh_token
+uv run playwright test
+```
+
+Refer to `docs/streamlit_app_plan.md` for the detailed SOP covering credential capture and CI integration.
+
 ## Contributing
 
 The package is designed for extensibility:

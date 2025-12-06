@@ -20,4 +20,11 @@ dependencies = [
     "scipy>=1.16.3",
     "streamlit>=1.52.0",
     "streamlit-authenticator>=0.4.2",
+    "streamlit-cookies-manager>=0.2.0,<0.3.0",
+]
+
+[project.optional-dependencies]
+e2e = [
+    "playwright>=1.48.0",
+    "pytest-playwright>=0.6.2",
 ]
