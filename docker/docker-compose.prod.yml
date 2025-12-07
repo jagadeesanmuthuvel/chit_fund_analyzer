@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  chit-fund-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chit-fund-analyzer:${VERSION:-latest}
+    container_name: chit-fund-app-prod
+    ports:
+      - "${APP_PORT:-8501}:8501"
+    volumes:
+      - chitfund-data:/app/data:rw
+      - ${CREDENTIALS_PATH:-./oauth_credentials.json}:/app/oauth_credentials.json:ro
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - chitfund-network
+
+networks:
+  chitfund-network:
+    driver: bridge
+
+volumes:
+  chitfund-data:
+    driver: local

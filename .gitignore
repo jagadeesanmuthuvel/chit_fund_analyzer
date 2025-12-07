@@ -38,8 +38,9 @@ ENV/
 # Environment variables
 .env
 .env.local
-*.env
+!.env.example
 *.json
+!pyproject.toml
 
 # OAuth credentials (sensitive)
 oauth_credentials.json
@@ -87,3 +88,12 @@ htmlcov/
 data/
 output/
 temp/
+
+# Docker
+.docker/
+docker-volumes/
+
+# Nginx SSL certificates (if generated locally)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt

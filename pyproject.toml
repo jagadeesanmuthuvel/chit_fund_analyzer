@@ -1,34 +1,66 @@
 [project]
 name = "chit-fund-analyzer"
 version = "0.1.0"
-description = "Add your description here"
+description = "Chit Fund Analysis and Management Tool"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "google-auth>=2.43.0",
-    "google-auth-httplib2>=0.2.1",
-    "google-auth-oauthlib>=1.2.2",
-    "gspread>=6.2.1",
-    "jupyterlab>=4.5.0",
-    "matplotlib>=3.10.7",
-    "numpy>=2.3.5",
+    # Core dependencies
+    "pydantic>=2.12.0",
     "numpy-financial>=1.0.0",
-    "openpyxl>=3.1.5",
-    "pandas>=2.3.3",
-    "plotly>=6.5.0",
-    "pydantic>=2.12.5",
-    "scipy>=1.16.3",
+    "pandas>=2.3.0",
+    "numpy>=2.3.0",
+    # Web application
     "streamlit>=1.52.0",
+    "plotly>=6.5.0",
+    # Google Sheets integration
+    "google-auth>=2.43.0",
+    "google-auth-oauthlib>=1.2.2",
+    "google-auth-httplib2>=0.2.1",
+    "gspread>=6.2.1",
+    # Authentication
     "streamlit-authenticator>=0.4.2",
     "streamlit-cookies-manager>=0.2.0,<0.3.0",
+    # Data processing and export
+    "openpyxl>=3.1.0",
+    # Scientific computing
+    "scipy>=1.16.0",
+    # Utilities
+    "click>=8.3.0",
+    "toml>=0.10.0",
 ]
 
 [project.optional-dependencies]
-e2e = [
-    "playwright>=1.48.0",
-    "pytest>=8.0.0",
-    "pytest-playwright>=0.6.2",
+test = [
+    "pytest>=7.4.0",
+    "pytest-playwright>=0.4.3",
+    "playwright>=1.40.0",
+]
+dev = [
+    "jupyter>=1.0.0",
+    "jupyterlab>=4.0.0",
+    "matplotlib>=3.10.0",
+]
+production = [
+    "gunicorn>=20.1.0",
+    "uvicorn>=0.18.0",
 ]
 
 [project.scripts]
 chit-app = "streamlit_app.main:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chit_fund_analyzer*", "streamlit_app*"]
+exclude = ["tests*", "test_scripts*", "data*", "notebooks*", "test_artifacts*", "docs*", "documentation*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

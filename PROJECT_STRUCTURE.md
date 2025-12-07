@@ -1,5 +1,75 @@
 # Chit Fund Analyzer - Project Structure
 
+```
+chit_fund_analyzer/
+├── .github/                        # GitHub configuration
+│   └── workflows/                  # GitHub Actions workflows
+│       └── docker-build.yml        # Docker CI/CD pipeline
+├── chit_fund_analyzer/             # Core Python package
+│   ├── __init__.py                 # Package initialization
+│   ├── analyzer.py                 # Main analysis engine
+│   ├── comparative.py              # 3-way comparison analyzer
+│   ├── exceptions.py               # Custom exceptions
+│   ├── models.py                   # Pydantic data models
+│   ├── scenario.py                 # Scenario analysis
+│   └── utils.py                    # Utility functions
+├── streamlit_app/                  # Web application
+│   ├── __init__.py
+│   ├── main.py                     # Application entry point
+│   ├── auth.py                     # Authentication module
+│   ├── db.py                       # Database management
+│   ├── utils.py                    # App utilities
+│   └── stages/                     # Multi-stage UI
+│       ├── __init__.py
+│       ├── login.py                # Login stage
+│       ├── dashboard.py            # Dashboard stage
+│       ├── installments.py         # Installments stage
+│       └── analytics.py            # Analytics stage (3-way comparison)
+├── tests/                          # Test suite
+│   ├── test_comparative.py         # Comparative analysis tests
+│   └── e2e/                        # End-to-end tests
+│       ├── conftest.py
+│       └── test_user_flow.py
+├── docs/                           # Documentation
+│   ├── INSTALL.md                  # Installation guide
+│   ├── DOCKER.md                   # Docker deployment guide
+│   ├── DOCKER_QUICKSTART.md        # Docker quick start
+│   ├── DOCKER_CONFIG.md            # Docker configuration reference
+│   ├── DOCKER_COMPLETE.md          # Complete Docker setup
+│   └── instructions.pdf            # Original instructions
+├── docker/                         # Docker configuration
+│   ├── README.md                   # Docker directory guide
+│   ├── docker-compose.yml          # Development/testing compose
+│   ├── docker-compose.prod.yml     # Production compose
+│   └── nginx/                      # Nginx configuration
+│       └── nginx.conf              # Reverse proxy config
+├── documentation/                  # Project documentation
+│   ├── DEPLOYMENT_COMPLETE.md
+│   ├── E2E_TEST_REPORT.md
+│   ├── MANUAL_UI_TESTING_REPORT.md
+│   ├── README.md
+│   └── TESTING_GUIDE.md
+├── scripts/                        # Utility scripts
+│   ├── COMMANDS.ps1
+│   ├── README.md
+│   ├── run_app.py
+│   └── show_test_results.ps1
+├── data/                           # Data storage (gitignored)
+├── notebooks/                      # Jupyter notebooks
+│   ├── chit_fund_analyzer_demo.ipynb
+│   └── chit_intrest_cal.ipynb
+├── .dockerignore                   # Docker build exclusions
+├── .env.example                    # Environment template
+├── .gitignore                      # Git exclusions
+├── Dockerfile                      # Docker image definition
+├── docker.ps1                      # Windows Docker helper
+├── Makefile                        # Unix Docker helper
+├── pyproject.toml                  # Python project configuration
+├── requirements.txt                # Deprecated (see pyproject.toml)
+├── README.md                       # Main project README
+└── PROJECT_STRUCTURE.md            # This file
+```
+
 This document describes the organized project structure.
 
 ## Directory Layout

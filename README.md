@@ -13,15 +13,48 @@ A Python package for analyzing chit fund investments with robust validation, typ
 
 ## Installation
 
-This package requires Python 3.13+ and the following dependencies:
+### Local Installation
+
+This package requires Python 3.13+ and uses `pyproject.toml` for dependency management:
 
 ```bash
-# Install dependencies using uv (recommended)
-uv add pydantic numpy-financial pandas openpyxl
+# Install with pip
+pip install -e .
 
-# Or using pip
-pip install pydantic numpy-financial pandas openpyxl
+# Or using uv (recommended)
+uv pip install -e .
+
+# With optional dependencies
+pip install -e ".[dev,test]"
 ```
+
+See [docs/INSTALL.md](docs/INSTALL.md) for detailed installation instructions.
+
+### Container Deployment (Docker/Podman)
+
+The application supports both **Docker** and **Podman**. Helper scripts automatically detect your container runtime.
+
+**Windows (PowerShell)**:
+```powershell
+.\docker.ps1 run      # Start container (auto-detects docker/podman)
+.\docker.ps1 stop     # Stop container
+.\docker.ps1 logs     # View logs
+```
+
+**Linux/Mac (Make)**:
+```bash
+make runtime          # Show detected runtime
+make up               # Start container
+make down             # Stop container
+make logs             # View logs
+```
+
+Access at: **http://localhost:8501**
+
+**Documentation**:
+- **[docs/PODMAN.md](docs/PODMAN.md)** - Podman-specific guide
+- **[docs/DOCKER_QUICKSTART.md](docs/DOCKER_QUICKSTART.md)** - Quick start
+- **[docs/DOCKER.md](docs/DOCKER.md)** - Full deployment guide
 
 ## Quick Start
 
@@ -253,13 +286,69 @@ The package provides specific exceptions for different error types:
 - `CalculationError`: Mathematical calculation issues
 - `ConfigurationError`: Configuration problems
 
+## Deployment
+
+### Docker Deployment
+
+The application is fully containerized and production-ready:
+
+**Quick Start**:
+```bash
+# Production
+docker-compose up -d
+
+# Development with hot reload
+docker-compose --profile dev up -d
+```
+
+**Features**:
+- Simple, optimized Dockerfile
+- Production-ready configuration
+- Health checks and monitoring
+- Resource limits and security hardening
+- CI/CD with GitHub Actions
+
+See comprehensive deployment guides:
+- [docs/DOCKER_QUICKSTART.md](docs/DOCKER_QUICKSTART.md) - Quick start guide
+- [docs/DOCKER.md](docs/DOCKER.md) - Complete deployment documentation
+
+### Local Deployment
+
+```bash
+# Install dependencies
+pip install -e ".[production]"
+
+# Run with Streamlit
+streamlit run streamlit_app/main.py
+
+# Or use the helper script
+python scripts/run_app.py
+```
+
 ## Requirements
 
 - Python 3.13+
-- pydantic 2.x
-- numpy-financial
-- pandas
-- openpyxl (for Excel export)
+- See [pyproject.toml](pyproject.toml) for complete dependency list
+
+### Core Dependencies
+- pydantic 2.x - Data validation
+- numpy-financial - IRR calculations
+- pandas - Data processing
+- streamlit - Web interface
+- plotly - Visualizations
+
+### Optional Dependencies
+- `[test]` - pytest, playwright for testing
+- `[dev]` - jupyter, matplotlib for development
+- `[production]` - gunicorn, uvicorn for production servers
+
+## Documentation
+
+- [README.md](README.md) - This file
+- [docs/INSTALL.md](docs/INSTALL.md) - Installation guide
+- [docs/DOCKER.md](docs/DOCKER.md) - Docker deployment guide
+- [docs/DOCKER_QUICKSTART.md](docs/DOCKER_QUICKSTART.md) - Docker quick start
+- [documentation/](documentation/) - Additional documentation
 
 ## License
 
