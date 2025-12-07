@@ -39,18 +39,22 @@ docker-compose -f docker/docker-compose.prod.yml up -d
 
 From the project root:
 
-**Windows**:
-```powershell
-.\docker.ps1 run    # Start container
-.\docker.ps1 stop   # Stop container
-.\docker.ps1 logs   # View logs
-```
-
 **Linux/Mac**:
 ```bash
 make up             # Start container
 make down           # Stop container
 make logs           # View logs
+```
+
+**Windows/All Platforms (Direct)**:
+```bash
+# Using docker-compose
+docker-compose -f docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml down
+
+# Using podman
+podman compose -f docker/docker-compose.yml up -d
+podman compose -f docker/docker-compose.yml down
 ```
 
 ## Documentation

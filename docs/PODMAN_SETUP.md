@@ -19,17 +19,9 @@ Podman is a daemonless container engine that's compatible with Docker commands:
 
 ## Usage
 
-All commands work exactly as documented. The helper scripts automatically detect Podman:
+All commands work with Podman:
 
-### Windows (PowerShell)
-
-```powershell
-.\docker.ps1 run      # Start container with Podman
-.\docker.ps1 stop     # Stop container
-.\docker.ps1 logs     # View logs
-.\docker.ps1 build    # Build image
-.\docker.ps1 clean    # Clean up containers/images
-```
+### Direct Podman Commands (All Platforms)
 
 ### Direct Podman Commands
 
@@ -183,13 +175,12 @@ Podman typically offers:
 
 Your setup is ready! Try:
 
-```powershell
+```bash
 # Build and run
-.\docker.ps1 build
-.\docker.ps1 run
+podman build -t chitfund-analyzer .
+podman compose -f docker/docker-compose.yml up -d
 
-# Access application
-# http://localhost:8501
+# Access application at http://localhost:8501
 ```
 
 See [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md) for deployment guide (works with Podman).

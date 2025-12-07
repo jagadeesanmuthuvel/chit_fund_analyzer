@@ -32,21 +32,25 @@ See [docs/INSTALL.md](docs/INSTALL.md) for detailed installation instructions.
 
 ### Container Deployment (Docker/Podman)
 
-The application supports both **Docker** and **Podman**. Helper scripts automatically detect your container runtime.
+The application supports both **Docker** and **Podman**.
 
-**Windows (PowerShell)**:
-```powershell
-.\docker.ps1 run      # Start container (auto-detects docker/podman)
-.\docker.ps1 stop     # Stop container
-.\docker.ps1 logs     # View logs
-```
-
-**Linux/Mac (Make)**:
+**Using Makefile (Linux/Mac)**:
 ```bash
 make runtime          # Show detected runtime
 make up               # Start container
 make down             # Stop container
 make logs             # View logs
+```
+
+**Direct Commands (All platforms)**:
+```bash
+# Docker
+docker-compose -f docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml down
+
+# Podman
+podman compose -f docker/docker-compose.yml up -d
+podman compose -f docker/docker-compose.yml down
 ```
 
 Access at: **http://localhost:8501**
