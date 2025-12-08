@@ -1,3 +1,12 @@
+---
+title: Chit Fund Analyzer
+emoji: 🏢
+colorFrom: red
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # Chit Fund Analyzer
 
 A Python package for analyzing chit fund investments with robust validation, type safety, and comprehensive analysis capabilities.
