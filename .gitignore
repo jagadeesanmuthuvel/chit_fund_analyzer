@@ -45,6 +45,17 @@ ENV/
 # OAuth credentials (sensitive)
 oauth_credentials.json
 credentials.json
+token.json
+*.token
+*_credentials.json
+!*_credentials.json.example
+!oauth_credentials.json.example
+
+# Hugging Face Spaces - Secrets
+# Never commit these files to HF Spaces
+.hf_token
+hf_token
+spaces_token
 
 # Testing
 .pytest_cache/

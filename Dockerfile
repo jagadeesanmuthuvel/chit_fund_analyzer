@@ -4,7 +4,7 @@ FROM python:3.13-slim
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    STREAMLIT_SERVER_PORT=8501 \
+    STREAMLIT_SERVER_PORT=7860 \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
     STREAMLIT_SERVER_HEADLESS=true \
     UV_SYSTEM_PYTHON=1
@@ -33,11 +33,11 @@ RUN uv pip install --system --no-cache -e .
 
 # Create Streamlit config
 RUN echo '[server]\n\
-port = 8501\n\
+port = 7860\n\
 address = "0.0.0.0"\n\
 headless = true\n\
-enableCORS = false\n\
-enableXsrfProtection = true\n\
+enableCORS = true\n\
+enableXsrfProtection = false\n\
 \n\
 [browser]\n\
 gatherUsageStats = false' > /app/.streamlit/config.toml && \
@@ -45,12 +45,12 @@ gatherUsageStats = false' > /app/.streamlit/config.toml && \
 
 USER chitfund
 
-EXPOSE 8501
+EXPOSE 7860
 
 # Health check (Note: Only works with Docker format, not OCI/Podman)
 # For Podman, use: podman build --format docker
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+    CMD curl -f http://localhost:7860/_stcore/health || exit 1
 
 # Run application
 CMD ["streamlit", "run", "streamlit_app/main.py"]
