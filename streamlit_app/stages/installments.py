@@ -213,6 +213,11 @@ def render_installment_editor(
                 amount_paid_dec = Decimal(str(amount_val))
                 base_installment = total_value / Decimal(str(chit['total_installments']))
                 
+                # Validate that amount_paid < base_installment
+                if amount_paid_dec >= base_installment:
+                    show_error(f"Pre-calculation error for installment {current_installment}: Amount Paid ({amount_paid_dec}) must be less than Base Installment ({base_installment:.2f})")
+                    continue
+                
                 # Calculate implied bid amount (discount)
                 # Formula: Amount Paid = (Total Value - Bid Amount) / Total Installments
                 # So: Bid Amount = Total Value - (Amount Paid * Total Installments)
@@ -220,7 +225,8 @@ def render_installment_editor(
                 bid_amount = total_value - (amount_paid_dec * Decimal(chit['total_installments']))
                 
                 if bid_amount <= 0:
-                    bid_amount = Decimal('0')
+                    show_error(f"Pre-calculation error for installment {current_installment}: Calculated bid amount must be positive")
+                    continue
                 
                 # Create ChitFundConfig with the calculated bid_amount
                 config = ChitFundConfig(
@@ -284,8 +290,14 @@ def render_installment_editor(
     # If data changed, save and rerun to recalculate
     if data_changed:
         try:
+            # Calculate base installment for validation
+            total_value = Decimal(str(chit['full_chit_value']))
+            base_installment = total_value / Decimal(str(chit['total_installments']))
+            
             # Save the edited data
             updates = []
+            validation_failed = False
+            
             for idx, row in edited_df.iterrows():
                 # Safely convert amount_paid, handling empty strings
                 try:
@@ -296,6 +308,15 @@ def render_installment_editor(
                         amount_paid = float(amount_val) if pd.notna(amount_val) and amount_val > 0 else None
                 except (ValueError, AttributeError, TypeError):
                     amount_paid = None
+                
+                # Validate amount_paid is less than base_installment
+                if amount_paid is not None and Decimal(str(amount_paid)) >= base_installment:
+                    show_error(
+                        f"Installment {int(row['installment_number'])}: Amount Paid ({amount_paid:.2f}) "
+                        f"must be less than Base Installment ({float(base_installment):.2f})"
+                    )
+                    validation_failed = True
+                    continue
                 
                 update = {
                     'installment_number': int(row['installment_number']),
@@ -309,6 +330,9 @@ def render_installment_editor(
                     'notes': str(row['notes']).strip() if pd.notna(row['notes']) else ''
                 }
                 updates.append(update)
+            
+            if validation_failed:
+                return
             
             db.update_installments(chit['chit_id'], updates)
             st.session_state['selected_chit'] = db.get_chit_by_id(chit['chit_id'])
