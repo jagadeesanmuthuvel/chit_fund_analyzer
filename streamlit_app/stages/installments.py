@@ -406,21 +406,45 @@ def render_installment_editor(
                     discount = None
                     annual_irr = None
                     
-                    amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
-                    if pd.notna(amount_val) and amount_val > 0:
+                    # Safely parse amount_paid from potentially formatted string
+                    try:
+                        if isinstance(row['amount_paid'], str):
+                            # Remove currency symbol and commas if present
+                            clean_amount = str(row['amount_paid']).replace('₹', '').replace(',', '').strip()
+                            if clean_amount == '' or clean_amount == 'None':
+                                amount_val = pd.NA
+                            else:
+                                amount_val = pd.to_numeric(clean_amount, errors='coerce')
+                        else:
+                            amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
+                    except Exception:
+                        amount_val = pd.NA
+                    
+                    if pd.notna(amount_val) and float(amount_val) > 0:
                         try:
                             current_installment = int(row['installment_number'])
                             previous_installments_df = edited_df[edited_df['installment_number'] < current_installment]
                             
                             previous_amounts = []
                             for prev_idx, prev_row in previous_installments_df.iterrows():
-                                prev_val = pd.to_numeric(prev_row['amount_paid'], errors='coerce')
-                                if pd.notna(prev_val) and prev_val > 0:
-                                    previous_amounts.append(Decimal(str(prev_val)))
+                                try:
+                                    if isinstance(prev_row['amount_paid'], str):
+                                        clean_prev = str(prev_row['amount_paid']).replace('₹', '').replace(',', '').strip()
+                                        if clean_prev and clean_prev != 'None':
+                                            prev_val = pd.to_numeric(clean_prev, errors='coerce')
+                                        else:
+                                            prev_val = pd.NA
+                                    else:
+                                        prev_val = pd.to_numeric(prev_row['amount_paid'], errors='coerce')
+                                    
+                                    if pd.notna(prev_val) and float(prev_val) > 0:
+                                        previous_amounts.append(Decimal(str(float(prev_val))))
+                                except Exception:
+                                    continue
                             
                             remaining_installments = chit['total_installments'] - current_installment
                             total_value = Decimal(str(chit['full_chit_value']))
-                            amount_paid = Decimal(str(amount_val))
+                            amount_paid = Decimal(str(float(amount_val)))
                             base_installment = total_value / Decimal(str(chit['total_installments']))
                             
                             bid_amount = total_value - ((amount_paid * remaining_installments) + base_installment)
