@@ -17,9 +17,13 @@ class GoogleAuthManager:
         """
         Get secret from st.secrets or os.environ.
         """
-        # Try st.secrets first
-        if hasattr(st, "secrets") and key in st.secrets:
-            return st.secrets[key]
+        # Try st.secrets first (but handle missing secrets.toml gracefully)
+        try:
+            if hasattr(st, "secrets") and key in st.secrets:
+                return st.secrets[key]
+        except Exception:
+            # st.secrets may not be configured, continue to env vars
+            pass
         
         # Fallback to environment variables
         return os.environ.get(key, default)
