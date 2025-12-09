@@ -138,6 +138,12 @@ def render_installment_editor(
     
     df = df[display_columns]
     
+    # Convert numeric columns to proper types for data_editor
+    numeric_cols = ['amount_paid', 'prize_amount', 'discount', 'annual_irr_winner']
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    
     # Format for display
     df['date'] = pd.to_datetime(df['date']).dt.date
     
