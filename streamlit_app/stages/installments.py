@@ -159,27 +159,23 @@ def render_installment_editor(
             help="Date of installment"
         ),
         'amount_paid': st.column_config.NumberColumn(
-            'Amount Paid (₹)',
+            'Amount Paid',
             help="Amount paid by non-winner members (enter to trigger calculations)",
-            format="₹%.2f",
             min_value=0
         ),
         'prize_amount': st.column_config.NumberColumn(
-            'Prize Amount (₹)',
+            'Prize Amount',
             help="Prize amount (auto-calculated)",
-            format="₹%.2f",
             disabled=True
         ),
         'discount': st.column_config.NumberColumn(
-            'Discount (₹)',
+            'Discount',
             help="Discount (auto-calculated from amount paid)",
-            format="₹%.2f",
             disabled=True
         ),
         'annual_irr_winner': st.column_config.NumberColumn(
-            'Annual IRR Winner (%)',
+            'Annual IRR Winner',
             help="Annual IRR for winner (auto-calculated)",
-            format="%.4f",
             disabled=True
         ),
         'winner_name': st.column_config.TextColumn(
