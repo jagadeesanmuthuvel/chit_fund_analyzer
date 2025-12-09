@@ -257,11 +257,27 @@ def render_installment_editor(
         orig_amount = df.loc[idx, 'amount_paid']
         new_amount = row['amount_paid']
         
-        # Check if amount_paid changed
-        if pd.isna(orig_amount) and pd.notna(new_amount):
-            data_changed = True
-        elif pd.notna(orig_amount) and pd.notna(new_amount) and orig_amount != new_amount:
-            data_changed = True
+        # Safely handle empty strings and None values
+        try:
+            # Convert to numeric, handling empty strings
+            if isinstance(orig_amount, str) and orig_amount.strip() == '':
+                orig_val = None
+            else:
+                orig_val = pd.to_numeric(orig_amount, errors='coerce')
+            
+            if isinstance(new_amount, str) and new_amount.strip() == '':
+                new_val = None
+            else:
+                new_val = pd.to_numeric(new_amount, errors='coerce')
+            
+            # Check if amount_paid changed
+            if pd.isna(orig_val) and pd.notna(new_val):
+                data_changed = True
+            elif pd.notna(orig_val) and pd.notna(new_val) and orig_val != new_val:
+                data_changed = True
+        except (ValueError, AttributeError):
+            # Skip comparison if there's a conversion error
+            continue
     
     # If data changed, save and rerun to recalculate
     if data_changed:
@@ -269,16 +285,26 @@ def render_installment_editor(
             # Save the edited data
             updates = []
             for idx, row in edited_df.iterrows():
+                # Safely convert amount_paid, handling empty strings
+                try:
+                    if isinstance(row['amount_paid'], str) and row['amount_paid'].strip() == '':
+                        amount_paid = None
+                    else:
+                        amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
+                        amount_paid = float(amount_val) if pd.notna(amount_val) and amount_val > 0 else None
+                except (ValueError, AttributeError, TypeError):
+                    amount_paid = None
+                
                 update = {
                     'installment_number': int(row['installment_number']),
                     'date': row['date'],
-                    'amount_paid': float(row['amount_paid']) if pd.notna(row['amount_paid']) else None,
+                    'amount_paid': amount_paid,
                     'prize_amount': None,  # Will be recalculated
                     'discount': None,
                     'annual_irr_winner': None,
-                    'winner_name': str(row['winner_name']) if pd.notna(row['winner_name']) else None,
+                    'winner_name': str(row['winner_name']).strip() if pd.notna(row['winner_name']) and str(row['winner_name']).strip() else None,
                     'is_winner': bool(row['is_winner']) if pd.notna(row['is_winner']) else False,
-                    'notes': str(row['notes']) if pd.notna(row['notes']) else ''
+                    'notes': str(row['notes']).strip() if pd.notna(row['notes']) else ''
                 }
                 updates.append(update)
             
@@ -328,10 +354,18 @@ def render_installment_editor(
             
             with col3:
                 irr_value = last_calc_row['annual_irr_winner'] if pd.notna(last_calc_row['annual_irr_winner']) else 0
-                st.metric(
-                    "📈 Annual IRR (Winner)",
-                    f"{irr_value:.4f}%" if irr_value else "0.00%"
-                )
+                # Convert to float safely
+                try:
+                    irr_float = float(irr_value) if irr_value else 0
+                    st.metric(
+                        "📈 Annual IRR (Winner)",
+                        f"{irr_float:.4f}%" if irr_float else "0.00%"
+                    )
+                except (ValueError, TypeError):
+                    st.metric(
+                        "📈 Annual IRR (Winner)",
+                        "0.00%"
+                    )
             
             with col4:
                 try:
