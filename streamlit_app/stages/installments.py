@@ -14,14 +14,14 @@ from chit_fund_analyzer.models import ChitFundConfig, ChitFundAnalysisResult
 from chit_fund_analyzer.analyzer import ChitFundAnalyzer
 from chit_fund_analyzer.exceptions import ChitFundAnalysisError
 
-from streamlit_app.db import ChitFundDB
+from streamlit_app.data_manager.base import DataManager
 from streamlit_app.utils import (
     show_success, show_error, show_warning, show_info,
     format_currency, format_percentage, show_metric_card
 )
 
 
-def render(db: ChitFundDB) -> None:
+def render(db: DataManager) -> None:
     """
     Render the installment tracking stage.
     
@@ -108,7 +108,7 @@ def render_chit_summary(chit: Dict[str, Any]) -> None:
 
 
 def render_installment_editor(
-    db: ChitFundDB, 
+    db: DataManager, 
     chit: Dict[str, Any], 
     installments: List[Dict[str, Any]]
 ) -> None:
@@ -192,7 +192,8 @@ def render_installment_editor(
     
     # Pre-calculate values for rows with amount_paid before displaying
     for idx, row in df.iterrows():
-        if pd.notna(row['amount_paid']) and row['amount_paid'] > 0:
+        amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
+        if pd.notna(amount_val) and amount_val > 0:
             current_installment = int(row['installment_number'])
             
             try:
@@ -201,16 +202,20 @@ def render_installment_editor(
                 
                 previous_amounts = []
                 for prev_idx, prev_row in previous_installments_df.iterrows():
-                    if pd.notna(prev_row['amount_paid']) and prev_row['amount_paid'] > 0:
-                        previous_amounts.append(Decimal(str(prev_row['amount_paid'])))
+                    prev_val = pd.to_numeric(prev_row['amount_paid'], errors='coerce')
+                    if pd.notna(prev_val) and prev_val > 0:
+                        previous_amounts.append(Decimal(str(prev_val)))
                 
                 remaining_installments = chit['total_installments'] - current_installment
                 total_value = Decimal(str(chit['full_chit_value']))
-                amount_paid = Decimal(str(row['amount_paid']))
+                amount_paid_dec = Decimal(str(amount_val))
                 base_installment = total_value / Decimal(str(chit['total_installments']))
                 
                 # Calculate implied bid amount (discount)
-                bid_amount = total_value - ((amount_paid * remaining_installments) + base_installment)
+                # Formula: Amount Paid = (Total Value - Bid Amount) / Total Installments
+                # So: Bid Amount = Total Value - (Amount Paid * Total Installments)
+                
+                bid_amount = total_value - (amount_paid_dec * Decimal(chit['total_installments']))
                 
                 if bid_amount <= 0:
                     bid_amount = Decimal('0')
@@ -292,7 +297,8 @@ def render_installment_editor(
     calculations_made = False
     
     for idx, row in edited_df.iterrows():
-        if pd.notna(row['amount_paid']) and row['amount_paid'] > 0:
+        amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
+        if pd.notna(amount_val) and amount_val > 0:
             calculations_made = True
             break
     
@@ -301,7 +307,8 @@ def render_installment_editor(
         # Find the last row with amount_paid for display
         last_calc_row = None
         for idx, row in edited_df.iterrows():
-            if pd.notna(row['amount_paid']) and row['amount_paid'] > 0:
+            amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
+            if pd.notna(amount_val) and amount_val > 0:
                 last_calc_row = row
         
         if last_calc_row is not None:
@@ -365,19 +372,21 @@ def render_installment_editor(
                     discount = None
                     annual_irr = None
                     
-                    if pd.notna(row['amount_paid']) and row['amount_paid'] > 0:
+                    amount_val = pd.to_numeric(row['amount_paid'], errors='coerce')
+                    if pd.notna(amount_val) and amount_val > 0:
                         try:
                             current_installment = int(row['installment_number'])
                             previous_installments_df = edited_df[edited_df['installment_number'] < current_installment]
                             
                             previous_amounts = []
                             for prev_idx, prev_row in previous_installments_df.iterrows():
-                                if pd.notna(prev_row['amount_paid']) and prev_row['amount_paid'] > 0:
-                                    previous_amounts.append(Decimal(str(prev_row['amount_paid'])))
+                                prev_val = pd.to_numeric(prev_row['amount_paid'], errors='coerce')
+                                if pd.notna(prev_val) and prev_val > 0:
+                                    previous_amounts.append(Decimal(str(prev_val)))
                             
                             remaining_installments = chit['total_installments'] - current_installment
                             total_value = Decimal(str(chit['full_chit_value']))
-                            amount_paid = Decimal(str(row['amount_paid']))
+                            amount_paid = Decimal(str(amount_val))
                             base_installment = total_value / Decimal(str(chit['total_installments']))
                             
                             bid_amount = total_value - ((amount_paid * remaining_installments) + base_installment)

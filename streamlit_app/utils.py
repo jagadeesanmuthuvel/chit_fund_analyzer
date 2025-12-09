@@ -26,7 +26,12 @@ def format_currency(amount: float | Decimal, currency: str = '₹') -> str:
     if amount is None:
         return f"{currency}0.00"
     
-    amount_float = float(amount) if isinstance(amount, Decimal) else amount
+    try:
+        amount_float = float(amount)
+    except (ValueError, TypeError):
+        # If conversion fails (e.g. empty string), return 0.00
+        return f"{currency}0.00"
+        
     return f"{currency}{amount_float:,.2f}"
 
 

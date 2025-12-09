@@ -18,14 +18,14 @@ from chit_fund_analyzer.scenario import ScenarioAnalyzer
 from chit_fund_analyzer.comparative import ComparativeAnalyzer
 from chit_fund_analyzer.exceptions import ChitFundAnalysisError
 
-from streamlit_app.db import ChitFundDB
+from streamlit_app.data_manager.base import DataManager
 from streamlit_app.utils import (
     show_success, show_error, show_warning,
     format_currency, format_percentage, create_downloadable_df
 )
 
 
-def render(db: ChitFundDB) -> None:
+def render(db: DataManager) -> None:
     """
     Render the analytics stage.
     
@@ -86,7 +86,7 @@ def render(db: ChitFundDB) -> None:
 
 
 def render_scenario_analysis(
-    db: ChitFundDB,
+    db: DataManager,
     chit: Dict[str, Any],
     current_installment: int,
     previous_amounts: List[Decimal]
@@ -160,7 +160,7 @@ def render_scenario_analysis(
 
 
 def render_comparative_analysis(
-    db: ChitFundDB,
+    db: DataManager,
     chit: Dict[str, Any],
     current_installment: int,
     previous_amounts: List[Decimal]

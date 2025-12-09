@@ -9,7 +9,7 @@ from decimal import Decimal
 from datetime import date, timedelta
 import time
 import streamlit as st
-from streamlit_app.db import ChitFundDB
+from streamlit_app.data_manager.base import DataManager
 from streamlit_app.utils import (
     show_success, show_error, show_warning, 
     validate_positive_number, validate_positive_integer,
@@ -17,7 +17,7 @@ from streamlit_app.utils import (
 )
 
 
-def render(db: ChitFundDB) -> None:
+def render(db: DataManager) -> None:
     """
     Render the dashboard stage.
     
@@ -36,7 +36,7 @@ def render(db: ChitFundDB) -> None:
         render_create_tab(db)
 
 
-def render_select_edit_tab(db: ChitFundDB) -> None:
+def render_select_edit_tab(db: DataManager) -> None:
     """Render the select/edit existing chit tab."""
     st.subheader("Select an Existing Chit")
     
@@ -162,7 +162,7 @@ def render_select_edit_tab(db: ChitFundDB) -> None:
                 show_error(f"Failed to update chit: {error_msg}")
 
 
-def render_create_tab(db: ChitFundDB) -> None:
+def render_create_tab(db: DataManager) -> None:
     """Render the create new chit tab."""
     st.subheader("Initialize a New Chit Fund")
     

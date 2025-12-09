@@ -48,6 +48,10 @@ credentials.json
 token.json
 *.token
 *_credentials.json
+
+# Streamlit secrets
+.streamlit/secrets.toml
+secrets.toml
 !*_credentials.json.example
 !oauth_credentials.json.example
 
@@ -77,7 +81,9 @@ data/*.xlsx
 # Logs
 *.log
 logs/
-
+# screenshors
+*.png
+*.jpg
 # Database
 *.db
 *.sqlite
