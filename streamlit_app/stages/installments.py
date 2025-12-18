@@ -217,7 +217,7 @@ def render_installment_editor(
                 # Formula: Amount Paid = (Total Value - Bid Amount) / Total Installments
                 # So: Bid Amount = Total Value - (Amount Paid * Total Installments)
                 
-                bid_amount = total_value - (amount_paid_dec * Decimal(chit['total_installments']))
+                bid_amount = total_value - ((amount_paid_dec * remaining_installments)+ base_installment)
                 
                 if bid_amount <= 0:
                     bid_amount = Decimal('0')
